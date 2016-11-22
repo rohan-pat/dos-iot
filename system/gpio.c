@@ -1,5 +1,7 @@
 #include <xinu.h>
 
+#define REG(n) (*((volatile uint32*)(n)))
+
 int32 p8_PortSet[] = {-1, -1, 1, 1, 1, 1, 2, 2,
 			2, 2, 1, 1, 0, 0, 1, 1, 
 			0, 2, 0, 1, 1, 1, 1, 1, 
@@ -124,3 +126,64 @@ uint32 GPIO_read(uint32 gpio, uint32 pinNumber)
 {
 	 return *((uint32 *)((void *)gpio_addr[gpio]+ GPIO_DATAIN)) & pinNumber;
 }
+
+
+/**
+ * Initializee the Analog-Digital Converter
+ */
+void adc_init() {
+
+	// enable the CM_WKUP_ADC_TSC_CLKCTRL with CM_WKUP_MODUELEMODE_ENABLE
+	REG(CM_WKUP_ADC_TSC_CLKCTRL) |= CM_WKUP_MODULEMODE_ENABLE;
+
+	// wait for the enable to complete
+	while(!(REG(CM_WKUP_ADC_TSC_CLKCTRL) & CM_WKUP_MODULEMODE_ENABLE)) {
+		// waiting for adc clock module to initialize
+		//printf("Waiting for CM_WKUP_ADC_TSC_CLKCTRL to enable with MODULEMODE_ENABLE\n");
+	}
+	// software reset, set bit 1 of sysconfig high?
+	// make sure STEPCONFIG write protect is off
+	REG(ADC_CTRL) |= ADC_STEPCONFIG_WRITE_PROTECT_OFF;
+
+	// set up each ADCSTEPCONFIG for each ain pin
+	REG(ADCSTEPCONFIG1) = 0x00<<19 | ADC_AVG16;
+	REG(ADCSTEPDELAY1)  = (0x0F)<<24;
+	REG(ADCSTEPCONFIG2) = 0x01<<19 | ADC_AVG16;
+	REG(ADCSTEPDELAY2)  = (0x0F)<<24;
+	REG(ADCSTEPCONFIG3) = 0x02<<19 | ADC_AVG16;
+	REG(ADCSTEPDELAY3)  = (0x0F)<<24;
+	REG(ADCSTEPCONFIG4) = 0x03<<19 | ADC_AVG16;
+	REG(ADCSTEPDELAY4)  = (0x0F)<<24;
+	REG(ADCSTEPCONFIG5) = 0x04<<19 | ADC_AVG16;
+	REG(ADCSTEPDELAY5)  = (0x0F)<<24;
+	REG(ADCSTEPCONFIG6) = 0x05<<19 | ADC_AVG16;
+	REG(ADCSTEPDELAY6)  = (0x0F)<<24;
+	REG(ADCSTEPCONFIG7) = 0x06<<19 | ADC_AVG16;
+	REG(ADCSTEPDELAY7)  = (0x0F)<<24;
+	REG(ADCSTEPCONFIG8) = 0x07<<19 | ADC_AVG16;
+	REG(ADCSTEPDELAY8)  = (0x0F)<<24;
+
+	// enable the ADC
+	REG(ADC_CTRL) |= 0x01;
+}
+
+/**
+ * Read in from an analog pin
+ *
+ * @param p pin to read value from
+ * @returns the analog value of pin p
+ */
+uint32 analogRead(uint32 ain) {
+	
+	// the clock module is not enabled
+	if(REG(CM_WKUP_ADC_TSC_CLKCTRL) & CM_WKUP_IDLEST_DISABLED)
+		adc_init();
+	
+	// enable the step sequencer for this pin
+	REG(ADC_STEPENABLE) |= (0x01<<(ain+1));
+
+	// return the the FIFO0 data register
+	return REG(ADC_FIFO0DATA) & ADC_FIFO_MASK;
+}
+
+
