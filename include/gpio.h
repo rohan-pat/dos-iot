@@ -7,7 +7,7 @@
 #define GPIO0 		0		/* GPIO ID */
 #define GPIO1 		1
 #define GPIO2 		2
-#define GPIO3		3
+#define GPIO3	  	3
 #define GPIO0_ADDR	0x44e07000
 #define GPIO1_ADDR 	0x4804c000
 #define GPIO2_ADDR 	0x481AC000
@@ -53,5 +53,3 @@
 #define GPIO_PIN_29	(1<< 29)
 #define GPIO_PIN_30	(1<< 30)
 #define GPIO_PIN_31	(1<< 31)
-
-
